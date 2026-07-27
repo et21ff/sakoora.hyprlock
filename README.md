@@ -45,7 +45,7 @@ Notable features include:
 
 <br>
 
-<h2 align=center> Installation </h2>
+<h2 align=center> installation </h2>
 
 > [!WARNING]
 > This has only been tested on Arch Linux.  
@@ -61,13 +61,13 @@ If you wish to install the dependencies manually, they are:
 ```
 hyprland hyprlock imagemagick grim bluez-utils networkmanager playerctl
 ```
-- `imagemagick` is requied to draw panels.
+- `imagemagick` is required to draw panels.
 - `grim` is used to take a screenshot for the drawing of panels.
 - `bluez-utils` provides `bluetoothctl` which is used for the bluetooth indicator.
 - `networkmanager` provides `nmcli` which is used for the network indicator.
 - `playerctl` is used to fetch info about currently playing media.
 
-## Notes
+<h2 align=center> notes </h2>
 1. Every file created/modified by the installer is located within `~/.config/hypr/sakoora.hyprlock`, with the exception of `hyprlock.conf`, and font files. The old `hyprlock.conf` (if any) has a suffix of `-pre-sakoora` added to it. The added fonts are Josefin Sans and Fira Code Nerd Font Mono (at `~/.local/share/fonts/ttf`.)
 2. The `panels` script for each style creates a folder named `hyprlock-cache` in `~/.cache`, in which it stores all drawn panels. This script should be called before hyprlock, especially in the case of panel drawing to ensure accuracy.
 
@@ -83,3 +83,24 @@ And an example hyprland keybind to lock the screen would be:
 bind = $mainMod, W, exec, ~/.config/hypr/sakoora.hyprlock/style-x/scripts/panels && hyprlock --grace 5
 ```
 3. The default installed theme is a modified version of catppuccin-macchiato. The colors can be changed by modifying them in `~/.config/hypr/sakoora.hyprlock/colors-hyprlock.sh` and `~/.config/hypr/sakoora.hyprlock/colors-hyprlock.conf`.
+
+<h2 align=center> support me! </h2>
+While not necessary at all, any and all support is deeply appreciated! Below are the ways to support me:
+
+<br>
+
+<h3 align=center> gumroad </h3>
+<p align=center>
+    <a href="https://pinksakoora.gumroad.com/l/legacy-bndl" target="_blank">
+    <img src="https://github.com/pinkSakoora/sakoora.hyprlock/blob/f0af69f5b771fd615a720ff846fe43ee0c286509/legacypromo.png" alt="gumroad banner" width=600>
+    </a> <br>
+    <a href="https://pinksakoora.gumroad.com/l/legacy-bndl" target=_blank">Legacy bundle</a> is a set of 5 handcrafted wallpapers picked from the art I've made<br> over the years. Buying this bundle is a great way to support me to allow<br> me to do what I love: art, design, and programming!
+</p>
+
+<h3 align=center> instagram </h3>
+<p align=center>
+    <a href="https://www.instagram.com/pinksakoora/" target="_blank">
+    <img src="https://github.com/pinkSakoora/sakoora.hyprlock/blob/f0af69f5b771fd615a720ff846fe43ee0c286509/instapromo.png" alt="instagram banner" width=600>
+    </a> <br>
+    Following my <a href="https://www.instagram.com/pinksakoora/" target="_blank">art page</a> itself, where I post artworks and process reels, would be much appreciated too!
+</p>
