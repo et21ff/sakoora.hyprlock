@@ -21,9 +21,6 @@ cache_value network-symbol "<span>  </span>" "$script_dir/network" -s &
 cache_value network-name "Disconnected" "$script_dir/network" -n &
 cache_value bluetooth-symbol "<span>  </span>" "$script_dir/bluetooth" -s &
 cache_value bluetooth-name "Disconnected" "$script_dir/bluetooth" -n &
-cache_value power-status " " "$script_dir/power" -s &
-cache_value power-percent "0%" "$script_dir/power" -p &
-cache_value power-indicator " " "$script_dir/power" -i &
 cache_value player-symbol "<span>  </span>" "$script_dir/player" -s &
 cache_value player-name "No media playing" "$script_dir/player" -n &
 cache_value player-artist "No media playing" "$script_dir/player" -a &

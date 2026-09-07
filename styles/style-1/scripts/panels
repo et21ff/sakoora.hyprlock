@@ -10,7 +10,11 @@ script_dir="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"
 "$script_dir/status-cache" &
 status_cache_pid=$!
 
-grim "$cache_dir/screenshot.png"
+if [ -n "${SAKOORA_MONITOR:-}" ]; then
+	grim -o "$SAKOORA_MONITOR" "$cache_dir/screenshot.png"
+else
+	grim "$cache_dir/screenshot.png"
+fi
 
 # Crop screenshot to required size
 # Resize to 0.1x, apply size 5 blur, resize to 10x (essentially being 50x blur for less resources used)

@@ -18,6 +18,7 @@ let
   cfg = config.sakoora-hyprlock;
   width = cfg.monitor.width;
   height = cfg.monitor.height;
+  monitorName = if cfg.monitor.name == null then "" else cfg.monitor.name;
   panelWidth =
     if builtins.div (4 * height) 9 >= builtins.div width 4 then
       builtins.div width 4
@@ -33,6 +34,7 @@ let
       ;
     source = self;
     style = cfg.style;
+    monitor = monitorName;
   };
 
   runtimeInputs = [
@@ -54,6 +56,7 @@ let
     name = "sakoora-panels";
     inherit runtimeInputs;
     text = ''
+      export SAKOORA_MONITOR=${lib.escapeShellArg monitorName}
       exec "$HOME/.config/hypr/sakoora.hyprlock/style-${toString cfg.style}/scripts/panels" "$@"
     '';
   };
@@ -90,6 +93,13 @@ in
     };
 
     monitor = {
+      name = mkOption {
+        type = types.nullOr (types.strMatching "[A-Za-z0-9._-]+");
+        default = null;
+        example = "DP-1";
+        description = "Output name on which to render the theme, or null for all outputs.";
+      };
+
       width = mkOption {
         type = types.ints.positive;
         example = 2560;

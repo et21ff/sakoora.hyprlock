@@ -91,6 +91,7 @@ sakoora-hyprlock = {
   enable = true;
   style = 1;
   monitor = {
+    name = "DP-1";
     width = 2560;
     height = 1440;
   };
@@ -121,7 +122,7 @@ NixOS has `security.pam.services.hyprlock = {};`, then run from this repository:
 nix run path:.#style-1
 ```
 
-The preview detects the monitor resolution with `hyprctl` or `wlr-randr` and
+The preview detects the monitor name and resolution with `hyprctl` or `wlr-randr` and
 creates all generated files in a temporary directory. It does not modify
 `~/.config/hypr`. Use `SAKOORA_MONITOR` to select a monitor by name,
 `SAKOORA_RESOLUTION` to provide the resolution manually, or `SAKOORA_GRACE` to
