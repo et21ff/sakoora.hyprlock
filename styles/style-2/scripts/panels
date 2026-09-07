@@ -3,7 +3,7 @@
 source "$HOME/.config/hypr/sakoora.hyprlock/style-2/sizes-hyprlock.sh"
 source "$HOME/.config/hypr/sakoora.hyprlock/colors-hyprlock.sh"
 
-WALL_PATH="$HOME/.config/themes/wallpaper.png"
+WALL_PATH="${SAKOORA_WALLPAPER:-$HOME/.config/themes/wallpaper.png}"
 CACHE_DIR="$HOME/.cache/hyprlock-cache/style-2"
 [[ ! -d "$CACHE_DIR" ]] && mkdir -p "$CACHE_DIR"
 

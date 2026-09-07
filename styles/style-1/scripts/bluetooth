@@ -1,7 +1,8 @@
 #!/bin/sh
 
 status() {
-	if [ "$(bluetoothctl devices Connected | wc -l)" -eq "0" ]; then
+	devices="$(timeout 2 bluetoothctl devices Connected 2>/dev/null || true)"
+	if [ -z "$devices" ]; then
 		return 1
 	else
 		return 2
@@ -15,7 +16,7 @@ name() {
 		1)
 			name="Disconnected";;
 		2 )
-			name=$(bluetoothctl devices Connected | head -n 1 | cut -d " " -f3-);;
+			name=$(printf '%s\n' "$devices" | head -n 1 | cut -d " " -f3-);;
 	esac
 	if [ "${#name}" -gt "12" ]; then
 		name="$(echo "$name" | cut -c1-9)..."

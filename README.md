@@ -67,6 +67,82 @@ hyprland hyprlock imagemagick grim bluez-utils networkmanager playerctl
 - `networkmanager` provides `nmcli` which is used for the network indicator.
 - `playerctl` is used to fetch info about currently playing media.
 
+<h3> NixOS and Home Manager </h3>
+
+The flake exports Home Manager and NixOS modules. Add the repository to your
+flake inputs:
+
+```nix
+inputs.sakoora-hyprlock.url = "github:pinkSakoora/sakoora.hyprlock";
+```
+
+Import both modules, then configure the Home Manager module with the physical
+resolution of the monitor used by Hyprlock:
+
+```nix
+# NixOS configuration
+imports = [ inputs.sakoora-hyprlock.nixosModules.default ];
+sakoora-hyprlock.enable = true;
+
+# Home Manager configuration
+imports = [ inputs.sakoora-hyprlock.homeManagerModules.default ];
+
+sakoora-hyprlock = {
+  enable = true;
+  style = 1;
+  monitor = {
+    width = 2560;
+    height = 1440;
+  };
+};
+```
+
+The Home Manager module builds both adaptive layouts, installs the bundled
+fonts and runtime dependencies, enables Hyprlock, and provides two commands:
+
+- `sakoora-panels` prepares the selected style's generated image assets.
+- `sakoora-lock` prepares those assets and then starts Hyprlock.
+
+For example, a Home Manager Hyprland key binding can use:
+
+```nix
+wayland.windowManager.hyprland.settings.bind = [
+  "$mod, L, exec, sakoora-lock"
+];
+```
+
+Style 2 currently uses the upstream wallpaper location at
+`~/.config/themes/wallpaper.png`.
+
+To preview a style without installing the Home Manager module, first make sure
+NixOS has `security.pam.services.hyprlock = {};`, then run from this repository:
+
+```bash
+nix run path:.#style-1
+```
+
+The preview detects the monitor resolution with `hyprctl` or `wlr-randr` and
+creates all generated files in a temporary directory. It does not modify
+`~/.config/hypr`. Use `SAKOORA_MONITOR` to select a monitor by name,
+`SAKOORA_RESOLUTION` to provide the resolution manually, or `SAKOORA_GRACE` to
+change the unlock grace period:
+
+```bash
+SAKOORA_MONITOR=DP-1 SAKOORA_GRACE=0 nix run path:.#style-1
+```
+
+For compositors without output-management support, specify the resolution:
+
+```bash
+SAKOORA_RESOLUTION=2560x1440 nix run path:.#style-1
+```
+
+Style 2 additionally needs a wallpaper:
+
+```bash
+SAKOORA_WALLPAPER="$HOME/Pictures/wallpaper.png" nix run path:.#style-2
+```
+
 <h2 align=center> notes </h2>
 1. Every file created/modified by the installer is located within `~/.config/hypr/sakoora.hyprlock`, with the exception of `hyprlock.conf`, and font files. The old `hyprlock.conf` (if any) has a suffix of `-pre-sakoora` added to it. The added fonts are Josefin Sans and Fira Code Nerd Font Mono (at `~/.local/share/fonts/ttf`.)
 2. The `panels` script for each style creates a folder named `hyprlock-cache` in `~/.cache`, in which it stores all drawn panels. This script should be called before hyprlock, especially in the case of panel drawing to ensure accuracy.

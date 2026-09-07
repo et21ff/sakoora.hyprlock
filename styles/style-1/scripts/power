@@ -2,21 +2,34 @@
 
 . "$HOME"/.config/hypr/sakoora.hyprlock/colors-hyprlock.sh
 percentage() {
-	if [ "$desktop" -eq "1" ]; then
-		echo "<span>  </span>"
-		exit
-	fi
 	total_max=0
 	total_current=0
+	total_percent=0
+	percent_count=0
 	for battery in /sys/class/power_supply/BAT*; do
-		current=$(cat "$battery"/charge_now)
-		max=$(cat "$battery"/charge_full)
-
-		total_max=$((total_max+max))
-		total_current=$((total_current+current))
+		[ -d "$battery" ] || continue
+		if [ -r "$battery/energy_now" ] && [ -r "$battery/energy_full" ]; then
+			current=$(cat "$battery/energy_now")
+			max=$(cat "$battery/energy_full")
+			total_max=$((total_max+max))
+			total_current=$((total_current+current))
+		elif [ -r "$battery/charge_now" ] && [ -r "$battery/charge_full" ]; then
+			current=$(cat "$battery/charge_now")
+			max=$(cat "$battery/charge_full")
+			total_max=$((total_max+max))
+			total_current=$((total_current+current))
+		elif [ -r "$battery/capacity" ]; then
+			total_percent=$((total_percent+$(cat "$battery/capacity")))
+			percent_count=$((percent_count+1))
+		fi
 	done
-	average_percent=$((total_current*100/total_max))
-	return "$average_percent"
+	if [ "$total_max" -gt 0 ]; then
+		echo $((total_current*100/total_max))
+	elif [ "$percent_count" -gt 0 ]; then
+		echo $((total_percent/percent_count))
+	else
+		echo 0
+	fi
 }
 
 status() {
@@ -28,6 +41,7 @@ status() {
 	a_count=0
 	b_count=0
 	for battery in /sys/class/power_supply/BAT*; do
+		[ -d "$battery" ] || continue
 		status=$(cat "$battery"/status)
 		case "$status" in
 			"Charging" )
@@ -58,8 +72,7 @@ indicator() {
 		echo "<span background='$background' foreground='$color2'> On desktop </span>"
 		exit
 	fi
-	percentage
-	percent=$?
+	percent=$(percentage)
 	status
 	case $? in
 		1 )
@@ -96,7 +109,7 @@ indicator() {
 	fi
 }
 
-if hostnamectl | grep -q "Chassis: laptop"; then
+if [ -d /sys/class/power_supply/BAT0 ] || [ -d /sys/class/power_supply/BAT1 ]; then
 	desktop=0
 else
 	desktop=1
@@ -105,9 +118,11 @@ case "$1" in
 	"-i" )
 		indicator;;
 	"-p" )
-		percentage
-		percent=$?
-		echo "$percent%";;
+		if [ "$desktop" -eq "1" ]; then
+			echo "<span>  </span>"
+		else
+			echo "$(percentage)%"
+		fi;;
 	"-s" )
 		status
 		echo "<span style='italic' weight='light'> $status </span>";;

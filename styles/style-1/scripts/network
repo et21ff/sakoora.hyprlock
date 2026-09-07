@@ -1,9 +1,9 @@
 #!/bin/sh
 
 status() {
-	if nmcli -t -f device con show --active | grep -q 'en'; then
+	if nmcli -t -f device con show --active 2>/dev/null | grep -q 'en'; then
 		return 1
-	elif nmcli -t -f device con show --active | grep -q 'wl'; then
+	elif nmcli -t -f device con show --active 2>/dev/null | grep -q 'wl'; then
 		return 2
 	else
 		return 3
@@ -15,9 +15,9 @@ name() {
 	stat="$?"
 	case "$stat" in
 		1 )
-			name=$(nmcli -t -f NAME,TYPE con show --active | grep ethernet | cut -d: -f1);;
+			name=$(nmcli -t -f NAME,TYPE con show --active 2>/dev/null | grep ethernet | cut -d: -f1);;
 		2 )
-			name=$(nmcli -t -f NAME,TYPE con show --active | grep wireless | cut -d: -f1);;
+			name=$(nmcli -t -f NAME,TYPE con show --active 2>/dev/null | grep wireless | cut -d: -f1);;
 		3 )
 			name="Disconnected";;
 	esac
