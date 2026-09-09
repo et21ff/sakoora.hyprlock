@@ -37,6 +37,30 @@ let
     monitor = monitorName;
   };
 
+  multi = cfg.monitors != [ ];
+  outputThemes = lib.imap0 (index: monitor: {
+    inherit monitor;
+    id = "output${toString index}";
+    theme = import ./theme.nix {
+      inherit pkgs;
+      inherit (monitor) width height;
+      source = self;
+      style = cfg.style;
+      monitor = monitor.name;
+      namespace = "output${toString index}";
+    };
+  }) cfg.monitors;
+  multiTheme = pkgs.runCommand "sakoora-hyprlock-multi" { } ''
+    mkdir -p "$out/outputs"
+    ${lib.concatMapStringsSep "\n" (output: ''
+      ln -s ${output.theme}/to_move/sakoora.hyprlock "$out/outputs/${output.id}"
+      # Animation definitions apply globally, so include them only once.
+      ${if output.id == "output0" then "cat" else "sed '/^animations {$/,/^}$/d'"} \
+        ${output.theme}/to_move/sakoora.hyprlock/current_style.conf >> "$out/current_style.conf"
+      printf '\n' >> "$out/current_style.conf"
+    '') outputThemes}
+  '';
+
   runtimeInputs = [
     pkgs.bluez
     pkgs.coreutils
@@ -50,15 +74,37 @@ let
     pkgs.playerctl
     pkgs.procps
     pkgs.systemd
+    pkgs.wlr-randr
+    pkgs.jq
   ];
 
   panels = pkgs.writeShellApplication {
     name = "sakoora-panels";
     inherit runtimeInputs;
-    text = ''
-      export SAKOORA_MONITOR=${lib.escapeShellArg monitorName}
-      exec "$HOME/.config/hypr/sakoora.hyprlock/style-${toString cfg.style}/scripts/panels" "$@"
-    '';
+    text =
+      if multi then
+        ''
+          outputs=$(wlr-randr --json)
+          pids=()
+          ${lib.concatMapStringsSep "\n" (output: ''
+            if jq -e --arg name ${lib.escapeShellArg output.monitor.name} \
+              'any(.[]; .enabled and .name == $name)' <<< "$outputs" >/dev/null; then
+              SAKOORA_MONITOR=${lib.escapeShellArg output.monitor.name} \
+                "$HOME/.config/hypr/sakoora.hyprlock/outputs/${output.id}/style-${toString cfg.style}/scripts/panels" "$@" &
+              pids+=("$!")
+            fi
+          '') outputThemes}
+          failed=0
+          for pid in "''${pids[@]}"; do
+            wait "$pid" || failed=1
+          done
+          exit "$failed"
+        ''
+      else
+        ''
+          export SAKOORA_MONITOR=${lib.escapeShellArg monitorName}
+          exec "$HOME/.config/hypr/sakoora.hyprlock/style-${toString cfg.style}/scripts/panels" "$@"
+        '';
   };
 
   lock = pkgs.writeShellApplication {
@@ -113,6 +159,20 @@ in
       };
     };
 
+    monitors = mkOption {
+      default = [ ];
+      description = "Independent output layouts. A nonempty list replaces the legacy monitor option.";
+      type = types.listOf (
+        types.submodule {
+          options = {
+            name = mkOption { type = types.strMatching "[A-Za-z0-9._-]+"; };
+            width = mkOption { type = types.ints.positive; };
+            height = mkOption { type = types.ints.positive; };
+          };
+        }
+      );
+    };
+
     grace = mkOption {
       type = types.ints.unsigned;
       default = 5;
@@ -136,8 +196,20 @@ in
   config = mkIf cfg.enable {
     assertions = [
       {
-        assertion = panelPadding > 0;
+        assertion =
+          if multi then
+            lib.all (
+              m: builtins.div (lib.min (builtins.div (4 * m.height) 9) (builtins.div m.width 4)) 12 > 0
+            ) cfg.monitors
+          else
+            panelPadding > 0;
         message = "sakoora-hyprlock.monitor is too small to produce a usable layout";
+      }
+      {
+        assertion =
+          !multi
+          || builtins.length (lib.unique (map (m: m.name) cfg.monitors)) == builtins.length cfg.monitors;
+        message = "sakoora-hyprlock.monitors must contain unique output names";
       }
     ];
 
@@ -150,7 +222,8 @@ in
       pkgs.noto-fonts-cjk-sans
     ];
 
-    xdg.configFile."hypr/sakoora.hyprlock".source = "${theme}/to_move/sakoora.hyprlock";
+    xdg.configFile."hypr/sakoora.hyprlock".source =
+      if multi then multiTheme else "${theme}/to_move/sakoora.hyprlock";
 
     programs.hyprlock = {
       enable = true;

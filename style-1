@@ -72,6 +72,7 @@ echo "Setting up style-1 for your display resolution."
 	echo "\$image_size = $((pw/3))"
 } >> "$S_SIZEFILECONF"
 {
+	echo "capture_size=${width}x${height}"
 	echo "initial_cutout_offset=$((width/2-pw))+$((height/2-pp/2-pw))"
 	echo "top_left_offset=0+$((pw*1/3-pp/2))"
 	echo "bottom_left_offset=0+$((pw*4/3-pp*3/2))"

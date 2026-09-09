@@ -104,6 +104,22 @@ fonts and runtime dependencies, enables Hyprlock, and provides two commands:
 - `sakoora-panels` prepares the selected style's generated image assets.
 - `sakoora-lock` prepares those assets and then starts Hyprlock.
 
+For independent layouts on mixed-resolution outputs, replace `monitor` with:
+
+```nix
+sakoora-hyprlock.monitors = [
+  { name = "eDP-1"; width = 1920; height = 1080; }
+  { name = "HDMI-A-1"; width = 2560; height = 1440; }
+];
+```
+
+Use physical pixel dimensions and connector names from `wlr-randr`.
+Each output gets separate layout variables, scripts and panel caches. Panel
+generation runs concurrently for enabled configured outputs; disconnected outputs
+are skipped. Named screenshots use scale 1 and uncompressed PNG. Existing single
+`monitor` configurations remain supported when `monitors` is empty. Rebuild after
+changing output names or resolutions. Outputs not listed have no Sakoora widgets.
+
 For example, a Home Manager Hyprland key binding can use:
 
 ```nix

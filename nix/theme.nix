@@ -5,6 +5,7 @@
   height,
   style,
   monitor,
+  namespace ? "",
 }:
 
 let
@@ -20,6 +21,7 @@ pkgs.runCommand "sakoora-hyprlock-${toString width}x${toString height}"
     nativeBuildInputs = [
       pkgs.bash
       pkgs.coreutils
+      pkgs.python3
     ];
   }
   ''
@@ -54,5 +56,27 @@ pkgs.runCommand "sakoora-hyprlock-${toString width}x${toString height}"
       done
     fi
 
+    ${pkgs.lib.optionalString (namespace != "") ''
+        python3 - "$theme_dir" ${pkgs.lib.escapeShellArg namespace} <<'PY'
+      import pathlib, re, sys
+      root = pathlib.Path(sys.argv[1])
+      namespace = sys.argv[2]
+      # Hyprlang variables are global: give every output its own names.
+      variables = set()
+      for path in root.rglob("*.conf"):
+          variables.update(re.findall(r"^\$([A-Za-z_][A-Za-z_0-9]*)\s*=", path.read_text(), re.M))
+      for path in root.rglob("*"):
+          if path.is_symlink() or not path.is_file():
+              continue
+          if path.suffix not in (".conf", ".sh") and path.parent.name != "scripts":
+              continue
+          text = path.read_text()
+          text = text.replace("hypr/sakoora.hyprlock/", "hypr/sakoora.hyprlock/outputs/" + namespace + "/")
+          text = text.replace("hyprlock-cache/", "hyprlock-cache/" + namespace + "/")
+          if path.suffix == ".conf":
+              text = re.sub(r"\$([A-Za-z_][A-Za-z_0-9]*)", lambda m: "$" + namespace + "_" + m[1] if m[1] in variables else m[0], text)
+          path.write_text(text)
+      PY
+    ''}
     patchShebangs "$theme_dir"
   ''

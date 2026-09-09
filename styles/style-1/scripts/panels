@@ -1,4 +1,5 @@
 #!/bin/sh
+set -e
 
 . "$HOME"/.config/hypr/sakoora.hyprlock/colors-hyprlock.sh		# Colors
 . "$HOME"/.config/hypr/sakoora.hyprlock/style-1/sizes-hyprlock.sh		# Get size of panels according to screen size
@@ -11,9 +12,9 @@ script_dir="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"
 status_cache_pid=$!
 
 if [ -n "${SAKOORA_MONITOR:-}" ]; then
-	grim -o "$SAKOORA_MONITOR" "$cache_dir/screenshot.png"
+	grim -s 1 -l 0 -o "$SAKOORA_MONITOR" "$cache_dir/screenshot.png"
 else
-	grim "$cache_dir/screenshot.png"
+	grim -l 0 "$cache_dir/screenshot.png"
 fi
 
 # Crop screenshot to required size
@@ -22,11 +23,15 @@ fi
 # Composite it on top of blurred screenshot
 # Split top and bottom panels
 
-magick \( "$cache_dir"/screenshot.png -crop "$initial_cutout_size"+"$initial_cutout_offset" -scale 10% -blur 0x5 -resize 1000% +repage \) \
+# grim -s 1 can produce logical output dimensions on scaled outputs.
+# Normalize to the same pixel coordinate system used by the layout generator.
+# Restore the exact crop size after blur to avoid percentage-rounding drift.
+magick \( "$cache_dir"/screenshot.png -resize "$capture_size!" +repage -crop "$initial_cutout_size"+"$initial_cutout_offset" +repage -scale 10% -blur 0x5 -resize "$initial_cutout_size!" +repage \) \
 	\( -size "$initial_cutout_size" xc:"$background" -alpha set -channel A -evaluate set 40% \) \
 	-composite "$cache_dir"/combi.png
-magick "$cache_dir"/combi.png -crop "$top_left_size"+"$top_left_offset" "$cache_dir"/top_left_panel.png
-magick "$cache_dir"/combi.png -crop "$bottom_left_size"+"$bottom_left_offset" "$cache_dir"/bottom_left_panel.png
-magick "$cache_dir"/combi.png -crop "$right_size"+"$right_offset" "$cache_dir"/right_panel.png
+rm -f "$cache_dir"/screenshot.png
+magick "$cache_dir"/combi.png -crop "$top_left_size"+"$top_left_offset" +repage "$cache_dir"/top_left_panel.png
+magick "$cache_dir"/combi.png -crop "$bottom_left_size"+"$bottom_left_offset" +repage "$cache_dir"/bottom_left_panel.png
+magick "$cache_dir"/combi.png -crop "$right_size"+"$right_offset" +repage "$cache_dir"/right_panel.png
 
 wait "$status_cache_pid"
