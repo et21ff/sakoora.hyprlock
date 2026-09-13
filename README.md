@@ -120,6 +120,38 @@ are skipped. Named screenshots use scale 1 and uncompressed PNG. Existing single
 `monitor` configurations remain supported when `monitors` is empty. Rebuild after
 changing output names or resolutions. Outputs not listed have no Sakoora widgets.
 
+To select the maximum supported resolution of a named output at lock time, omit
+both dimensions:
+
+```nix
+sakoora-hyprlock.monitors = [
+  { name = "eDP-1"; width = 1920; height = 1080; }
+  { name = "HDMI-A-1"; } # Automatically select the maximum supported pixel area.
+];
+```
+
+To discover all enabled outputs automatically, use:
+
+```nix
+sakoora-hyprlock.autoDetect = true;
+# Optional named overrides; other outputs use their maximum supported resolution.
+sakoora-hyprlock.monitors = [
+  { name = "eDP-1"; width = 1920; height = 1080; }
+];
+```
+
+Automatic layouts query `wlr-randr --json` each time `sakoora-lock` starts. The
+largest width × height wins (ties use width, then height); refresh rate does not
+affect layout size. Disabled/disconnected outputs are skipped. An enabled output
+without reported modes causes a clear error unless it has explicit dimensions.
+This requires a compositor supporting `wlr-randr`'s output-management protocol.
+It generates theme geometry only and does not change the compositor's display
+mode. A maximum mode different from your active mode may need an explicit
+width/height override for the desired appearance. Runtime layouts are stored in
+`~/.cache/sakoora-layout`; launch via `sakoora-lock` so they and panel images exist
+before Hyprlock loads them. Neither legacy `monitor.width` nor `monitor.height`
+is required when using `monitors` or `autoDetect`.
+
 For example, a Home Manager Hyprland key binding can use:
 
 ```nix

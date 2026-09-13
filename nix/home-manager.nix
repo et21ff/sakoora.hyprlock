@@ -38,6 +38,12 @@ let
   };
 
   multi = cfg.monitors != [ ];
+  dynamic = cfg.autoDetect || lib.any (m: m.width == null || m.height == null) cfg.monitors;
+  runtimeSettings = pkgs.writeText "sakoora-outputs.json" (
+    builtins.toJSON {
+      inherit (cfg) monitors autoDetect;
+    }
+  );
   outputThemes = lib.imap0 (index: monitor: {
     inherit monitor;
     id = "output${toString index}";
@@ -76,13 +82,19 @@ let
     pkgs.systemd
     pkgs.wlr-randr
     pkgs.jq
+    pkgs.python3
+    pkgs.bash
   ];
 
   panels = pkgs.writeShellApplication {
     name = "sakoora-panels";
     inherit runtimeInputs;
     text =
-      if multi then
+      if dynamic then
+        ''
+          exec python3 ${./runtime-layout.py} ${self} ${runtimeSettings} ${toString cfg.style} "$@"
+        ''
+      else if multi then
         ''
           outputs=$(wlr-randr --json)
           pids=()
@@ -159,15 +171,27 @@ in
       };
     };
 
+    autoDetect = mkOption {
+      type = types.bool;
+      default = false;
+      description = "Generate layouts at lock time for all enabled outputs, using their maximum supported pixel area. Named monitors override automatic dimensions.";
+    };
+
     monitors = mkOption {
       default = [ ];
-      description = "Independent output layouts. A nonempty list replaces the legacy monitor option.";
+      description = "Independent output layouts. A nonempty list replaces the legacy monitor option. Omit both dimensions to select the maximum supported resolution at lock time.";
       type = types.listOf (
         types.submodule {
           options = {
             name = mkOption { type = types.strMatching "[A-Za-z0-9._-]+"; };
-            width = mkOption { type = types.ints.positive; };
-            height = mkOption { type = types.ints.positive; };
+            width = mkOption {
+              type = types.nullOr types.ints.positive;
+              default = null;
+            };
+            height = mkOption {
+              type = types.nullOr types.ints.positive;
+              default = null;
+            };
           };
         }
       );
@@ -197,13 +221,19 @@ in
     assertions = [
       {
         assertion =
-          if multi then
+          if multi || dynamic then
             lib.all (
-              m: builtins.div (lib.min (builtins.div (4 * m.height) 9) (builtins.div m.width 4)) 12 > 0
+              m:
+              (m.width == null && m.height == null)
+              || (
+                m.width != null
+                && m.height != null
+                && builtins.div (lib.min (builtins.div (4 * m.height) 9) (builtins.div m.width 4)) 12 > 0
+              )
             ) cfg.monitors
           else
             panelPadding > 0;
-        message = "sakoora-hyprlock.monitor is too small to produce a usable layout";
+        message = "sakoora-hyprlock: specify both width and height (or neither); dimensions must produce a usable layout";
       }
       {
         assertion =
@@ -222,14 +252,20 @@ in
       pkgs.noto-fonts-cjk-sans
     ];
 
-    xdg.configFile."hypr/sakoora.hyprlock".source =
-      if multi then multiTheme else "${theme}/to_move/sakoora.hyprlock";
+    xdg.configFile."hypr/sakoora.hyprlock" = mkIf (!dynamic) {
+      source = if multi then multiTheme else "${theme}/to_move/sakoora.hyprlock";
+    };
 
     programs.hyprlock = {
       enable = true;
       package = cfg.package;
       extraConfig = mkAfter ''
-        source = ~/.config/hypr/sakoora.hyprlock/current_style.conf
+        source = ${
+          if dynamic then
+            "~/.cache/sakoora-layout/current_style.conf"
+          else
+            "~/.config/hypr/sakoora.hyprlock/current_style.conf"
+        }
       '';
     };
   };
